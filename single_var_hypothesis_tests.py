@@ -146,7 +146,7 @@ def high_and_med_danger(filepath, season_year):
     # Print results.
     print(Fore.BLUE + '\nHigh and medium danger shots n and p values: ')
     print(Style.RESET_ALL)
-    print('Wins with more high and medium danger shots combined: ' + str(df['Result'].sum()))
+    print('Wins with more high and medium danger shots combined: ' + str(df['Result'].sum() / 2))
     print('n value: ' + str(n / 2))
     print('p value: ' + str(p))
 
