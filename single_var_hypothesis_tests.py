@@ -119,25 +119,25 @@ def high_and_med_danger(filepath, season_year):
     """
 
     # Extract the relevant data.
-    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'mediumDangerGoalsFor',
-                                 'highDangerGoalsFor', 'mediumDangerGoalsAgainst', 'highDangerGoalsAgainst'], season_year)
+    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'highDangerShotsFor', 'mediumDangerShotsAgainst', 'highDangerShotsAgainst'], season_year)
 
     # Check if team with more combined medium and high danger shots had more wins.
     df['Result'] = 0
     df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.highDangerGoalsFor + df.mediumDangerGoalsFor > df.highDangerGoalsAgainst + df.mediumDangerGoalsAgainst),
+                                        df.highDangerShotsFor + df.mediumDangerShotsFor > df.highDangerShotsAgainst + df.mediumDangerShotsAgainst),
                          np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.highDangerGoalsAgainst + df.mediumDangerGoalsAgainst > df.highDangerGoalsFor + df.mediumDangerGoalsFor)), 'Result'] = 1
+                                        df.highDangerShotsAgainst + df.mediumDangerShotsAgainst > df.highDangerShotsFor + df.mediumDangerShotsFor)), 'Result'] = 1
 
     # If high and medium danger shots are equal, check if one team has more high danger shots.
     df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
                                         np.logical_and(
-                                            df.highDangerGoalsFor + df.mediumDangerGoalsFor == df.highDangerGoalsAgainst + df.mediumDangerGoalsAgainst,
-                                            df.highDangerGoalsFor > df.highDangerGoalsAgainst)),
+                                            df.highDangerShotsFor + df.mediumDangerShotsFor == df.highDangerShotsAgainst + df.mediumDangerShotsAgainst,
+                                            df.highDangerShotsFor > df.highDangerShotsAgainst)),
                          np.logical_and(df.goalsAgainst > df.goalsFor,
                                         np.logical_and(
-                                            df.highDangerGoalsAgainst + df.mediumDangerGoalsAgainst == df.highDangerGoalsFor + df.mediumDangerGoalsFor,
-                                            df.highDangerGoalsAgainst > df.highDangerGoalsFor))), 'Result'] = 1
+                                            df.highDangerShotsAgainst + df.mediumDangerShotsAgainst == df.highDangerShotsFor + df.mediumDangerShotsFor,
+                                            df.highDangerShotsAgainst > df.highDangerShotsFor))), 'Result'] = 1
 
     # Calculate n (number of rows) and p (sum of the result column divided by n).
     n = df.shape[0]
