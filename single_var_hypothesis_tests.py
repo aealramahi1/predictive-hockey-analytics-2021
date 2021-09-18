@@ -3,7 +3,7 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 2
+TOTAL_TESTS = 5
 
 
 def main():
@@ -51,7 +51,10 @@ def main():
         # Use a dictionary definition as a mock switch statement to choose the appropriate function.
         switch = {
             1: lambda: shots_on_goal(filepath, season),
-            2: lambda: high_and_med_danger(filepath, season),
+            2: lambda: single_danger_shot(filepath, season, 'high'),
+            3: lambda: single_danger_shot(filepath, season, 'medium'),
+            4: lambda: single_danger_shot(filepath, season, 'low'),
+            5: lambda: high_and_med_danger(filepath, season)
         }
 
         if choice != TOTAL_TESTS + 1:
@@ -120,7 +123,8 @@ def high_and_med_danger(filepath, season_year):
 
     # Extract the relevant data.
     df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
-                                 'highDangerShotsFor', 'mediumDangerShotsAgainst', 'highDangerShotsAgainst'], season_year)
+                                 'highDangerShotsFor', 'mediumDangerShotsAgainst', 'highDangerShotsAgainst'],
+                      season_year)
 
     # Check if team with more combined medium and high danger shots had more wins.
     df['Result'] = 0
@@ -151,6 +155,62 @@ def high_and_med_danger(filepath, season_year):
     print('p value: ' + str(p))
 
 
+def single_danger_shot(filepath, season_year, danger):
+    """
+    Calculate and print n and p values for hypothesis test regarding low, medium, or high danger shots.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    :param danger: A string of the danger to be analyzed (low, medium, or high)
+    :raise ValueError if dangers is not 'low', 'medium', or 'high'
+    """
+
+    # Universal columns to be extracted
+    cols = ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst']
+
+    # Add the columns relevant to each danger.
+    if 'low' in danger:
+        cols.append('lowDangerShotsFor')
+        cols.append('lowDangerShotsAgainst')
+    elif 'medium' in danger:
+        cols.append('mediumDangerShotsFor')
+        cols.append('mediumDangerShotsAgainst')
+    elif 'high' in danger:
+        cols.append('highDangerShotsFor')
+        cols.append('highDangerShotsAgainst')
+    else:
+        raise ValueError('Danger must be low, medium, or high.')
+
+    # Extract the relevant data.
+    df = extract_data(filepath, cols, season_year)
+
+    # Check if team with more danger shots of the specified type had more wins.
+    if 'low' in danger:
+        shots_for = df.lowDangerShotsFor
+        shots_against = df.lowDangerShotsAgainst
+    elif 'medium' in danger:
+        shots_for = df.mediumDangerShotsFor
+        shots_against = df.mediumDangerShotsAgainst
+    else:
+        shots_for = df.highDangerShotsFor
+        shots_against = df.highDangerShotsAgainst
+
+    df['Result'] = 0
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, shots_for > shots_against),
+                         np.logical_and(df.goalsAgainst > df.goalsFor, shots_against > shots_for)), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = df.shape[0]
+    p = float(df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\n' + danger + ' danger shots n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with more' + danger + ' danger shots: ' + str(df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
 def extract_data(filepath, columns, season_year):
     """
     Extract the relevant data from the CSV file.
@@ -172,10 +232,13 @@ def print_menu():
     """
     Prints a menu of options for the user to choose from.
     """
-    print('\n\nPlease choose one of the hypothesis tests below:')
-    print('1. Effects of shots on goal on win percentage (all teams in the season)')
-    print('2. Effects of medium and high danger shots (combined) on win percentage (all teams in the season)')
-    print('3. Exit')
+    print('\n\nPlease choose one of the hypothesis tests below (all teams in the season):')
+    print('1. Effects of shots on goal on win percentage')
+    print('2. Effects of high danger shots on win percentage')
+    print('3. Effects of medium danger shots on win percentage')
+    print('4. Effects of low danger shots on win percentage')
+    print('5. Effects of medium and high danger shots (combined) on win percentage')
+    print('6. Exit')
     print()
 
 
