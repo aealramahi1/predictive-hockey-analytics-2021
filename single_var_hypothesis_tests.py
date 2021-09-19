@@ -3,7 +3,7 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 5
+TOTAL_TESTS = 6
 
 
 def main():
@@ -54,7 +54,8 @@ def main():
             2: lambda: single_danger_shot(filepath, season, 'high'),
             3: lambda: single_danger_shot(filepath, season, 'medium'),
             4: lambda: single_danger_shot(filepath, season, 'low'),
-            5: lambda: high_and_med_danger(filepath, season)
+            5: lambda: high_and_med_danger(filepath, season),
+            6: lambda: high_and_low_danger(filepath, season)
         }
 
         if choice != TOTAL_TESTS + 1:
@@ -155,6 +156,48 @@ def high_and_med_danger(filepath, season_year):
     print('p value: ' + str(p))
 
 
+def high_and_low_danger(filepath, season_year):
+    """
+    Calculate and print n and p values for hypothesis test regarding low and high danger shots combined.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'lowDangerShotsFor',
+                                 'highDangerShotsFor', 'lowDangerShotsAgainst', 'highDangerShotsAgainst'],
+                      season_year)
+
+    # Check if team with more combined low and high danger shots had more wins.
+    df['Result'] = 0
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                        df.highDangerShotsFor + df.lowDangerShotsFor > df.highDangerShotsAgainst + df.lowDangerShotsAgainst),
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        df.highDangerShotsAgainst + df.lowDangerShotsAgainst > df.highDangerShotsFor + df.lowDangerShotsFor)), 'Result'] = 1
+
+    # If high and medium danger shots are equal, check if one team has more high danger shots.
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                        np.logical_and(
+                                            df.highDangerShotsFor + df.lowDangerShotsFor == df.highDangerShotsAgainst + df.lowDangerShotsAgainst,
+                                            df.highDangerShotsFor > df.highDangerShotsAgainst)),
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        np.logical_and(
+                                            df.highDangerShotsAgainst + df.lowDangerShotsAgainst == df.highDangerShotsFor + df.lowDangerShotsFor,
+                                            df.highDangerShotsAgainst > df.highDangerShotsFor))), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = df.shape[0]
+    p = float(df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nHigh and low danger shots n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with more high and low danger shots combined: ' + str(df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
 def single_danger_shot(filepath, season_year, danger):
     """
     Calculate and print n and p values for hypothesis test regarding low, medium, or high danger shots.
@@ -165,7 +208,7 @@ def single_danger_shot(filepath, season_year, danger):
     :raise ValueError if dangers is not 'low', 'medium', or 'high'
     """
 
-    # Universal columns to be extracted
+    # Universal columns to be extracted.
     cols = ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst']
 
     # Add the columns relevant to each danger.
@@ -238,7 +281,8 @@ def print_menu():
     print('3. Effects of medium danger shots on win percentage')
     print('4. Effects of low danger shots on win percentage')
     print('5. Effects of medium and high danger shots (combined) on win percentage')
-    print('6. Exit')
+    print('6. Effects of low and high danger shots (combined) on win percentage')
+    print('7. Exit')
     print()
 
 
