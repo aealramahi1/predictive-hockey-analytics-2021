@@ -3,7 +3,7 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 6
+TOTAL_TESTS = 8
 
 
 def main():
@@ -55,7 +55,9 @@ def main():
             3: lambda: single_danger_shot(filepath, season, 'medium'),
             4: lambda: single_danger_shot(filepath, season, 'low'),
             5: lambda: high_and_med_danger(filepath, season),
-            6: lambda: high_and_low_danger(filepath, season)
+            6: lambda: high_and_low_danger(filepath, season),
+            7: lambda: low_danger_and_rebounds_sum(filepath, season),
+            8: lambda: rebounds_and_low_danger_shots_ratio(filepath, season)
         }
 
         if choice != TOTAL_TESTS + 1:
@@ -254,6 +256,72 @@ def single_danger_shot(filepath, season_year, danger):
     print('p value: ' + str(p))
 
 
+def low_danger_and_rebounds_sum(filepath, season_year):
+    """
+    Calculate and print n and p values for hypothesis test regarding the sum of low danger shots and rebounds for the
+    winning team.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'lowDangerShotsFor',
+                                 'reboundsFor', 'lowDangerShotsAgainst', 'reboundsAgainst'],
+                      season_year)
+
+    # Check if team with more combined low danger shots and rebounds had more wins. Equal sums counts as a failure.
+    df['Result'] = 0
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                        df.reboundsFor + df.lowDangerShotsFor > df.reboundsAgainst + df.lowDangerShotsAgainst),
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        df.reboundsAgainst + df.lowDangerShotsAgainst > df.reboundsFor + df.lowDangerShotsFor)), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = df.shape[0]
+    p = float(df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nLow danger shots and rebounds (sum) n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with more low danger shots and rebounds combined: ' + str(df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
+def rebounds_and_low_danger_shots_ratio(filepath, season_year):
+    """
+    Calculate and print n and p values for hypothesis test regarding the ratio of rebounds to low danger shots for the
+    winning team.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'lowDangerShotsFor',
+                                 'reboundsFor', 'lowDangerShotsAgainst', 'reboundsAgainst'],
+                      season_year)
+
+    # Check if team with a higher ratio of rebounds to low danger shots had more wins. Equal ratios count as a failure.
+    df['Result'] = 0
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                        df.reboundsFor / df.lowDangerShotsFor > df.reboundsAgainst / df.lowDangerShotsAgainst),
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        df.reboundsAgainst / df.lowDangerShotsAgainst > df.reboundsFor / df.lowDangerShotsFor)), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = df.shape[0]
+    p = float(df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nRebounds and low danger shots (ratio) n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with a higher ratio of rebounds to low danger shots: ' + str(df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
 def extract_data(filepath, columns, season_year):
     """
     Extract the relevant data from the CSV file.
@@ -276,13 +344,15 @@ def print_menu():
     Prints a menu of options for the user to choose from.
     """
     print('\n\nPlease choose one of the hypothesis tests below (all teams in the season):')
-    print('1. Effects of shots on goal on win percentage')
-    print('2. Effects of high danger shots on win percentage')
-    print('3. Effects of medium danger shots on win percentage')
-    print('4. Effects of low danger shots on win percentage')
-    print('5. Effects of medium and high danger shots (combined) on win percentage')
-    print('6. Effects of low and high danger shots (combined) on win percentage')
-    print('7. Exit')
+    print('1. Shots on goal on win percentage')
+    print('2. High danger shots on win percentage')
+    print('3. Medium danger shots on win percentage')
+    print('4. Low danger shots on win percentage')
+    print('5. Medium and high danger shots (combined) on win percentage')
+    print('6. Low and high danger shots (combined) on win percentage')
+    print('7. Low danger shots and rebounds (combined) on win percentage')
+    print('8. Rebounds and low danger shots (ratio) on win percentage')
+    print('9. Exit')
     print()
 
 
