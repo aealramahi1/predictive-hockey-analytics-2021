@@ -6,7 +6,7 @@ import re
 
 def main():
     """
-    Creates an CSV file named penalties_YYYY.csv containing all the penalty information from hockey-reference.com games
+    Creates a CSV file named penalties_YYYY.csv containing all the penalty information from hockey-reference.com games
     in the year (YYYY) specified by the user.
     """
     year = 0
