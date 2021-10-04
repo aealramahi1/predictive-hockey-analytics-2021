@@ -3,7 +3,7 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 8
+TOTAL_TESTS = 9
 
 
 def main():
@@ -57,7 +57,8 @@ def main():
             5: lambda: high_and_med_danger(filepath, season),
             6: lambda: high_and_low_danger(filepath, season),
             7: lambda: low_danger_and_rebounds_sum(filepath, season),
-            8: lambda: rebounds_and_low_danger_shots_ratio(filepath, season)
+            8: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
+            9: lambda: time_on_power_play(filepath, season)
         }
 
         if choice != TOTAL_TESTS + 1:
@@ -322,21 +323,66 @@ def rebounds_and_low_danger_shots_ratio(filepath, season_year):
     print('p value: ' + str(p))
 
 
-def extract_data(filepath, columns, season_year):
+def time_on_power_play(filepath, season_year):
     """
-    Extract the relevant data from the CSV file.
+    Calculate and print n and p values for hypothesis test regarding the time in power play (5 on 4) for the
+    winning team.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the data from the "all" row to check for the winner of the game.
+    all_data_df = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst'], season_year)
+    power_play_for = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime'], season_year, '5on4')
+    power_play_against = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime'], season_year, '4on5')
+
+    # Only find games that did not go into overtime.
+    power_play_for = power_play_for[power_play_for.gameId.isin(all_data_df.gameId)]
+    power_play_against = power_play_against[power_play_against.gameId.isin(all_data_df.gameId)]
+
+    # Check if team with more goals had more time in power play (more time in 5 on 4 than the other team).
+    all_data_df['Result'] = 0
+    all_data_df.loc[np.logical_or(np.logical_and(all_data_df.goalsFor > all_data_df.goalsAgainst,
+                                                 power_play_for.iceTime > power_play_against.iceTime),
+                                  np.logical_and(all_data_df.goalsAgainst > all_data_df.goalsFor,
+                                                 power_play_against.iceTime > power_play_for.iceTime)), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = all_data_df.shape[0]
+    p = float(all_data_df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nTime in power play n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with more time in power play: ' + str(all_data_df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
+def extract_data(filepath, columns, season_year, situation='all'):
+    """
+    Extract the relevant data from the CSV file. Games are indexed by their ID automatically (do not pass in as column).
+    If 'all' situation specified, only games that did not go into overtime are returned.
 
     :param filepath: The path that contains the hockey data.
     :param columns: The column names that should be included.
     :param season_year: The season to be included.
-    :return: A dataframe containing only the relevant rows and columns.
+    :param situation: The situation to be analyzed (default is 'all').
+    :return: A DataFrame containing only the relevant rows and columns.
     """
 
     # Extract relevant columns.
-    df = pd.read_csv(filepath_or_buffer=filepath, delimiter=',', header=0, usecols=columns)
+    df = pd.read_csv(filepath_or_buffer=filepath, delimiter=',', header=0, usecols=columns.append('gameId'))
 
-    # Extract rows of games that didn't go into overtime in the specified seasons. Data includes 'all' situation only.
-    return df[np.logical_and(np.logical_and(df.situation == 'all', df.season == season_year), df.iceTime == 3600)]
+    # Extract rows of games that didn't go into overtime if the situation is 'all'
+    if situation == 'all':
+        df = df[np.logical_and(np.logical_and(df.situation == situation, df.season == season_year), df.iceTime == 3600)]
+    else:
+        df = df[np.logical_and(df.situation == situation, df.season == season_year)]
+
+    df.index = df.gameId
+    return df
 
 
 def print_menu():
@@ -352,7 +398,8 @@ def print_menu():
     print('6. Low and high danger shots (combined) on win percentage')
     print('7. Low danger shots and rebounds (combined) on win percentage')
     print('8. Rebounds and low danger shots (ratio) on win percentage')
-    print('9. Exit')
+    print('9. Time in power play on win percentage')
+    print('10. Exit')
     print()
 
 
