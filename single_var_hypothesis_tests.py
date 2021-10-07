@@ -3,7 +3,7 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 9
+TOTAL_TESTS = 11
 
 
 def main():
@@ -58,7 +58,9 @@ def main():
             6: lambda: high_and_low_danger(filepath, season),
             7: lambda: low_danger_and_rebounds_sum(filepath, season),
             8: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
-            9: lambda: time_on_power_play(filepath, season)
+            9: lambda: medium_and_high_danger_and_rebounds_sum(filepath, season),
+            10: lambda: rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
+            11: lambda: time_on_power_play(filepath, season)
         }
 
         if choice != TOTAL_TESTS + 1:
@@ -323,6 +325,76 @@ def rebounds_and_low_danger_shots_ratio(filepath, season_year):
     print('p value: ' + str(p))
 
 
+def medium_and_high_danger_and_rebounds_sum(filepath, season_year):
+    """
+    Calculate and print n and p values for hypothesis test regarding the sum of medium/high danger shots and rebounds for the
+    winning team.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'highDangerShotsFor', 'reboundsFor', 'mediumDangerShotsAgainst',
+                                 'highDangerShotsAgainst', 'reboundsAgainst'], season_year)
+
+    # Check if team with more combined med/high danger shots and rebounds had more wins. Equal sums counts as a failure.
+    df['Result'] = 0
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                        df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor > df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst),
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst > df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor)), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = df.shape[0]
+    p = float(df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nMedium and high danger shots and rebounds (sum) n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with more medium and high danger shots and rebounds combined: ' + str(df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
+def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
+    """
+    Calculate and print n and p values for hypothesis test regarding the ratio of rebounds to medium and high danger shots for the
+    winning team.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'highDangerShotsFor', 'reboundsFor', 'mediumDangerShotsAgainst',
+                                 'highDangerShotsAgainst', 'reboundsAgainst'], season_year)
+
+    # Check if team with a higher ratio of rebounds to low danger shots had more wins. Equal ratios count as a failure.
+    df['Result'] = 0
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                        df.reboundsFor / (
+                                                    df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
+                                                    df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)),
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        df.reboundsAgainst / (
+                                                    df.mediumDangerShotsAgainst + df.highDangerShotsAgainst) > df.reboundsFor / (
+                                                    df.mediumDangerShotsFor + df.highDangerShotsFor))), 'Result'] = 1
+
+    # Calculate n (number of rows) and p (sum of the result column divided by n).
+    n = df.shape[0]
+    p = float(df['Result'].sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nRebounds and medium/high danger shots (ratio) n and p values: ')
+    print(Style.RESET_ALL)
+    print('Wins with a higher ratio of rebounds to medium/high danger shots: ' + str(df['Result'].sum() / 2))
+    print('n value: ' + str(n / 2))
+    print('p value: ' + str(p))
+
+
 def time_on_power_play(filepath, season_year):
     """
     Calculate and print n and p values for hypothesis test regarding the time in power play (5 on 4) for the
@@ -333,7 +405,8 @@ def time_on_power_play(filepath, season_year):
     """
 
     # Extract the data from the "all" row to check for the winner of the game.
-    all_data_df = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst'], season_year)
+    all_data_df = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst'],
+                               season_year)
     power_play_for = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime'], season_year, '5on4')
     power_play_against = extract_data(filepath, ['season', 'gameId', 'situation', 'iceTime'], season_year, '4on5')
 
@@ -398,8 +471,10 @@ def print_menu():
     print('6. Low and high danger shots (combined) on win percentage')
     print('7. Low danger shots and rebounds (combined) on win percentage')
     print('8. Rebounds and low danger shots (ratio) on win percentage')
-    print('9. Time in power play on win percentage')
-    print('10. Exit')
+    print('9. Medium/high danger shots and rebounds (combined) on win percentage')
+    print('10. Rebounds and medium/high danger shots (ratio) on win percentage')
+    print('11. Time in power play on win percentage')
+    print('12. Exit')
     print()
 
 
