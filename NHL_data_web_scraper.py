@@ -68,30 +68,34 @@ def extract_game_penalties(url, date):
     penalty_rows = soup.find('table', id='penalty').find_all('tr', recursive=False)
     penalty_data = []
 
-    # Extract the current period from the first row of the table.
-    period = int(re.search(r'\d|', penalty_rows[0].get_text()).group())
+    # Extract the current period from the first row of the table. Make sure there are penalties first.
+    if penalty_rows:
+        period = int(re.search(r'\d|', penalty_rows[0].get_text()).group())
 
-    # Skip the first row since we already used it to find the column.
-    for row in penalty_rows[1:]:
+        # Skip the first row since we already used it to find the column.
+        for row in penalty_rows[1:]:
 
-        # If this row does not contain the game period, it contains data which we need to aggregate.
-        if row.get('class') is None:
+            # If this row does not contain the game period, it contains data which we need to aggregate.
+            if row.get('class') is None:
 
-            # Add the contents of this row to a list that we will put inside of penalty data.
-            row_data = [date, period]
-            data = row.find_all('td', recursive=False)
+                # Add the contents of this row to a list that we will put inside of penalty data.
+                row_data = [date, period]
+                data = row.find_all('td', recursive=False)
 
-            for d in data:
-                row_data.append(d.get_text())
+                for d in data:
+                    row_data.append(d.get_text())
 
-            penalty_data.append(row_data)
+                penalty_data.append(row_data)
 
-        # This is the case for the row containing the game period.
-        elif isinstance(row.get('class'), list) and row.get('class')[0] == 'thead' or row.get('class')[0] == 'onecell':
+            # This is the case for the row containing the game period.
+            elif isinstance(row.get('class'), list) and row.get('class')[0] == 'thead' or row.get('class')[0] == 'onecell':
 
-            # Change the period of the game.
-            period = int(re.search(r'\d|', row.get_text()).group())
+                # Change the period of the game.
+                period = int(re.search(r'\d|', row.get_text()).group())
 
+                # If this is an overtime period, add three to it (i.e., first overtime period is represented as the 4th period).
+                if 'OT' in row.get_text():
+                    period += 3
     return penalty_data
 
 
