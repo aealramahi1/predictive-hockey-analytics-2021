@@ -3,7 +3,7 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 11
+TOTAL_TESTS = 12
 
 
 def main():
@@ -50,17 +50,18 @@ def main():
 
         # Use a dictionary definition as a mock switch statement to choose the appropriate function.
         switch = {
-            1: lambda: shots_on_goal(filepath, season),
-            2: lambda: single_danger_shot(filepath, season, 'high'),
-            3: lambda: single_danger_shot(filepath, season, 'medium'),
-            4: lambda: single_danger_shot(filepath, season, 'low'),
-            5: lambda: high_and_med_danger(filepath, season),
-            6: lambda: high_and_low_danger(filepath, season),
-            7: lambda: low_danger_and_rebounds_sum(filepath, season),
-            8: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
-            9: lambda: medium_and_high_danger_and_rebounds_sum(filepath, season),
-            10: lambda: rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
-            11: lambda: time_on_power_play(filepath, season)
+            1: lambda: single_col_for_and_against(filepath, season, 'shotsOnGoal'),
+            2: lambda: single_col_for_and_against(filepath, season, 'highDangerShots'),
+            3: lambda: single_col_for_and_against(filepath, season, 'mediumDangerShots'),
+            4: lambda: single_col_for_and_against(filepath, season, 'lowDangerShots'),
+            5: lambda: single_col_for_and_against(filepath, season, 'rebounds'),
+            6: lambda: high_and_med_danger(filepath, season),
+            7: lambda: high_and_low_danger(filepath, season),
+            8: lambda: low_danger_and_rebounds_sum(filepath, season),
+            9: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
+            10: lambda: medium_and_high_danger_and_rebounds_sum(filepath, season),
+            11: lambda: rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
+            12: lambda: time_on_power_play(filepath, season)
         }
 
         if choice != TOTAL_TESTS + 1:
@@ -88,33 +89,38 @@ def main():
         print()
 
 
-def shots_on_goal(filepath, season_year):
+def single_col_for_and_against(filepath, season_year, col_name):
     """
-    Calculate and print n and p values for hypothesis test regarding shots on goal.
+    Calculate and print n and p values for hypothesis test regarding a single variable with "for" and "against" columns
+    in all_teams.csv. Checks if a win corresponds to having a higher value in the column than the other team.
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :param col_name: The name of the column to be analyzed
     """
+
+    for_col = col_name + 'For'
+    against_col = col_name + 'Against'
 
     # Extract the relevant data.
     df = extract_data(filepath,
-                      ['season', 'situation', 'iceTime', 'shotsOnGoalFor', 'goalsFor', 'shotsOnGoalAgainst',
-                       'goalsAgainst'], season_year)
+                      ['season', 'situation', 'iceTime', 'shotsOnGoalFor', for_col, against_col, 'goalsAgainst'],
+                      season_year)
 
-    # Check if team with more goals has more shots on goal.
+    # Check if team with more goals has more of the column value.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, df.shotsOnGoalFor > df.shotsOnGoalAgainst),
+    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, getattr(df, for_col) > getattr(df, against_col)),
                          np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.shotsOnGoalAgainst > df.shotsOnGoalFor)), 'Result'] = 1
+                                        getattr(df, against_col) > getattr(df, for_col))), 'Result'] = 1
 
     # Calculate n (number of rows) and p (sum of the result column divided by n).
     n = df.shape[0]
     p = float(df['Result'].sum()) / n
 
     # Print results.
-    print(Fore.BLUE + '\nShots on goal n and p values: ')
+    print(Fore.BLUE + '\nn and p values: ')
     print(Style.RESET_ALL)
-    print('Wins with more shots on goal: ' + str(df['Result'].sum()))
+    print('Number of successes: ' + str(df['Result'].sum()))
     print('n value: ' + str(n / 2))
     print('p value: ' + str(p))
 
@@ -199,62 +205,6 @@ def high_and_low_danger(filepath, season_year):
     print(Fore.BLUE + '\nHigh and low danger shots n and p values: ')
     print(Style.RESET_ALL)
     print('Wins with more high and low danger shots combined: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
-
-
-def single_danger_shot(filepath, season_year, danger):
-    """
-    Calculate and print n and p values for hypothesis test regarding low, medium, or high danger shots.
-
-    :param filepath: The path that contains the hockey data.
-    :param season_year: The season to be analyzed.
-    :param danger: A string of the danger to be analyzed (low, medium, or high)
-    :raise ValueError if dangers is not 'low', 'medium', or 'high'
-    """
-
-    # Universal columns to be extracted.
-    cols = ['season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst']
-
-    # Add the columns relevant to each danger.
-    if 'low' in danger:
-        cols.append('lowDangerShotsFor')
-        cols.append('lowDangerShotsAgainst')
-    elif 'medium' in danger:
-        cols.append('mediumDangerShotsFor')
-        cols.append('mediumDangerShotsAgainst')
-    elif 'high' in danger:
-        cols.append('highDangerShotsFor')
-        cols.append('highDangerShotsAgainst')
-    else:
-        raise ValueError('Danger must be low, medium, or high.')
-
-    # Extract the relevant data.
-    df = extract_data(filepath, cols, season_year)
-
-    # Check if team with more danger shots of the specified type had more wins.
-    if 'low' in danger:
-        shots_for = df.lowDangerShotsFor
-        shots_against = df.lowDangerShotsAgainst
-    elif 'medium' in danger:
-        shots_for = df.mediumDangerShotsFor
-        shots_against = df.mediumDangerShotsAgainst
-    else:
-        shots_for = df.highDangerShotsFor
-        shots_against = df.highDangerShotsAgainst
-
-    df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, shots_for > shots_against),
-                         np.logical_and(df.goalsAgainst > df.goalsFor, shots_against > shots_for)), 'Result'] = 1
-
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
-
-    # Print results.
-    print(Fore.BLUE + '\n' + danger + ' danger shots n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with more' + danger + ' danger shots: ' + str(df['Result'].sum() / 2))
     print('n value: ' + str(n / 2))
     print('p value: ' + str(p))
 
@@ -376,12 +326,12 @@ def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
     df['Result'] = 0
     df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
                                         df.reboundsFor / (
-                                                    df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
-                                                    df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)),
+                                                df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
+                                                df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)),
                          np.logical_and(df.goalsAgainst > df.goalsFor,
                                         df.reboundsAgainst / (
-                                                    df.mediumDangerShotsAgainst + df.highDangerShotsAgainst) > df.reboundsFor / (
-                                                    df.mediumDangerShotsFor + df.highDangerShotsFor))), 'Result'] = 1
+                                                df.mediumDangerShotsAgainst + df.highDangerShotsAgainst) > df.reboundsFor / (
+                                                df.mediumDangerShotsFor + df.highDangerShotsFor))), 'Result'] = 1
 
     # Calculate n (number of rows) and p (sum of the result column divided by n).
     n = df.shape[0]
@@ -467,14 +417,15 @@ def print_menu():
     print('2. High danger shots on win percentage')
     print('3. Medium danger shots on win percentage')
     print('4. Low danger shots on win percentage')
-    print('5. Medium and high danger shots (combined) on win percentage')
-    print('6. Low and high danger shots (combined) on win percentage')
-    print('7. Low danger shots and rebounds (combined) on win percentage')
-    print('8. Rebounds and low danger shots (ratio) on win percentage')
-    print('9. Medium/high danger shots and rebounds (combined) on win percentage')
-    print('10. Rebounds and medium/high danger shots (ratio) on win percentage')
-    print('11. Time in power play on win percentage')
-    print('12. Exit')
+    print('5. Having more rebounds on win percentage')
+    print('6. Medium and high danger shots (combined) on win percentage')
+    print('7. Low and high danger shots (combined) on win percentage')
+    print('8. Low danger shots and rebounds (combined) on win percentage')
+    print('9. Rebounds and low danger shots (ratio) on win percentage')
+    print('10. Medium/high danger shots and rebounds (combined) on win percentage')
+    print('11. Rebounds and medium/high danger shots (ratio) on win percentage')
+    print('12. Time in power play on win percentage')
+    print('13. Exit')
     print()
 
 
