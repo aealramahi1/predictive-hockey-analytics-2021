@@ -3,32 +3,21 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_TESTS = 12
+TOTAL_OPTIONS = 13
 
 
 def main():
     """
     Asks user for data to analyze about hockey games.
     """
-    filepath = None
     season = -1
     choice = -1
 
     # Obtain valid filepath from user.
-    valid_filepath = False
-    while not valid_filepath:
-        inputted_file = input('Please enter filepath to all_teams.csv from MoneyPuck (relative or absolute): ')
-
-        # Check for read permission on the file that we are trying to access.
-        if os.access(inputted_file, os.R_OK):
-            filepath = inputted_file
-            valid_filepath = True
-        else:
-            print(Fore.RED + 'Could not access file. Make sure the path is correct.\n', 'red')
-            print(Style.RESET_ALL)
+    filepath = get_file()
 
     # Keep getting input from the user until the select exit.
-    while choice != TOTAL_TESTS + 1:
+    while choice != TOTAL_OPTIONS + 1:
 
         # Have the user select a variable to analyze from the menu.
         print_menu()
@@ -40,12 +29,12 @@ def main():
                 choice = int(input('Please make a selection: '))
 
                 # Make sure the choice is in range.
-                if choice < 0 or choice > TOTAL_TESTS + 1:
+                if choice < 0 or choice > TOTAL_OPTIONS + 1:
                     choice = -1
                     raise ValueError
                 valid_choice = True
             except ValueError:
-                print(Fore.RED + 'Please enter a number between 1 and ' + str(TOTAL_TESTS) + '.\n')
+                print(Fore.RED + 'Please enter a number between 1 and ' + str(TOTAL_OPTIONS) + '.\n')
                 print(Style.RESET_ALL)
 
         # Use a dictionary definition as a mock switch statement to choose the appropriate function.
@@ -64,7 +53,7 @@ def main():
             12: lambda: time_on_power_play(filepath, season)
         }
 
-        if choice != TOTAL_TESTS + 1:
+        if choice < TOTAL_OPTIONS:
 
             # Obtain valid season from the user.
             valid_season = False
@@ -86,6 +75,8 @@ def main():
 
             f = switch.get(choice)
             f()
+        elif choice == TOTAL_OPTIONS:
+            filepath = get_file()
         print()
 
 
@@ -408,6 +399,24 @@ def extract_data(filepath, columns, season_year, situation='all'):
     return df
 
 
+def get_file():
+    """
+    Obtains the filepath of the CSV from the user.
+
+    :return: The path to the valid CSV file.
+    """
+    valid_filepath = False
+    while not valid_filepath:
+        inputted_file = input('Please enter filepath to all_teams.csv from MoneyPuck (relative or absolute): ')
+
+        # Check for read permission on the file that we are trying to access.
+        if os.access(inputted_file, os.R_OK):
+            return inputted_file
+        else:
+            print(Fore.RED + 'Could not access file. Make sure the path is correct.\n', 'red')
+            print(Style.RESET_ALL)
+
+
 def print_menu():
     """
     Prints a menu of options for the user to choose from.
@@ -425,7 +434,8 @@ def print_menu():
     print('10. Medium/high danger shots and rebounds (combined) on win percentage')
     print('11. Rebounds and medium/high danger shots (ratio) on win percentage')
     print('12. Time in power play on win percentage')
-    print('13. Exit')
+    print('13. Change file path.')
+    print('14. Exit')
     print()
 
 
