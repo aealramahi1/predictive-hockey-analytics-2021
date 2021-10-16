@@ -3,7 +3,8 @@ import numpy as np
 import os
 from colorama import Fore, Style
 
-TOTAL_OPTIONS = 13
+# Does not include "exit".
+TOTAL_OPTIONS = 16
 
 
 def main():
@@ -44,13 +45,16 @@ def main():
             3: lambda: single_col_for_and_against(filepath, season, 'mediumDangerShots'),
             4: lambda: single_col_for_and_against(filepath, season, 'lowDangerShots'),
             5: lambda: single_col_for_and_against(filepath, season, 'rebounds'),
-            6: lambda: high_and_med_danger(filepath, season),
-            7: lambda: high_and_low_danger(filepath, season),
-            8: lambda: low_danger_and_rebounds_sum(filepath, season),
-            9: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
-            10: lambda: medium_and_high_danger_and_rebounds_sum(filepath, season),
-            11: lambda: rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
-            12: lambda: time_on_power_play(filepath, season)
+            6: lambda: single_col_for_and_against(filepath, season, 'takeaways'),
+            7: lambda: single_col_for_and_against(filepath, season, 'penalties'),
+            8: lambda: single_col_for_and_against(filepath, season, 'penalityMinutes'),
+            9: lambda: high_and_med_danger(filepath, season),
+            10: lambda: high_and_low_danger(filepath, season),
+            11: lambda: low_danger_and_rebounds_sum(filepath, season),
+            12: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
+            13: lambda: medium_and_high_danger_and_rebounds_sum(filepath, season),
+            14: lambda: rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
+            15: lambda: time_on_power_play(filepath, season)
         }
 
         if choice < TOTAL_OPTIONS:
@@ -100,20 +104,17 @@ def single_col_for_and_against(filepath, season_year, col_name):
 
     # Check if team with more goals has more of the column value.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, getattr(df, for_col) > getattr(df, against_col)),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        getattr(df, against_col) > getattr(df, for_col))), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(
+            np.logical_and(df.goalsFor > df.goalsAgainst, getattr(df, for_col) > getattr(df, against_col)),
+            np.logical_and(df.goalsAgainst > df.goalsFor,
+                           getattr(df, against_col) > getattr(df, for_col))), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              getattr(df, for_col) > getattr(df, against_col)), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nn and p values: ')
-    print(Style.RESET_ALL)
-    print('Number of successes: ' + str(df['Result'].sum()))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def high_and_med_danger(filepath, season_year):
@@ -131,31 +132,33 @@ def high_and_med_danger(filepath, season_year):
 
     # Check if team with more combined medium and high danger shots had more wins.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.highDangerShotsFor + df.mediumDangerShotsFor > df.highDangerShotsAgainst + df.mediumDangerShotsAgainst),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.highDangerShotsAgainst + df.mediumDangerShotsAgainst > df.highDangerShotsFor + df.mediumDangerShotsFor)), 'Result'] = 1
 
-    # If high and medium danger shots are equal, check if one team has more high danger shots.
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        np.logical_and(
-                                            df.highDangerShotsFor + df.mediumDangerShotsFor == df.highDangerShotsAgainst + df.mediumDangerShotsAgainst,
-                                            df.highDangerShotsFor > df.highDangerShotsAgainst)),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        np.logical_and(
-                                            df.highDangerShotsAgainst + df.mediumDangerShotsAgainst == df.highDangerShotsFor + df.mediumDangerShotsFor,
-                                            df.highDangerShotsAgainst > df.highDangerShotsFor))), 'Result'] = 1
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            df.highDangerShotsFor + df.mediumDangerShotsFor > df.highDangerShotsAgainst + df.mediumDangerShotsAgainst),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.highDangerShotsAgainst + df.mediumDangerShotsAgainst > df.highDangerShotsFor + df.mediumDangerShotsFor)), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+        # If high and medium danger shots are equal, check if one team has more high danger shots.
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            np.logical_and(
+                                                df.highDangerShotsFor + df.mediumDangerShotsFor == df.highDangerShotsAgainst + df.mediumDangerShotsAgainst,
+                                                df.highDangerShotsFor > df.highDangerShotsAgainst)),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            np.logical_and(
+                                                df.highDangerShotsAgainst + df.mediumDangerShotsAgainst == df.highDangerShotsFor + df.mediumDangerShotsFor,
+                                                df.highDangerShotsAgainst > df.highDangerShotsFor))), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              df.highDangerShotsFor + df.mediumDangerShotsFor > df.highDangerShotsAgainst + df.mediumDangerShotsAgainst), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nHigh and medium danger shots n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with more high and medium danger shots combined: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+        # If high and medium danger shots are equal, check if one team has more high danger shots.
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              np.logical_and(
+                                  df.highDangerShotsFor + df.mediumDangerShotsFor == df.highDangerShotsAgainst + df.mediumDangerShotsAgainst,
+                                  df.highDangerShotsFor > df.highDangerShotsAgainst)), 'Result'] = 1
+
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def high_and_low_danger(filepath, season_year):
@@ -173,31 +176,33 @@ def high_and_low_danger(filepath, season_year):
 
     # Check if team with more combined low and high danger shots had more wins.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.highDangerShotsFor + df.lowDangerShotsFor > df.highDangerShotsAgainst + df.lowDangerShotsAgainst),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.highDangerShotsAgainst + df.lowDangerShotsAgainst > df.highDangerShotsFor + df.lowDangerShotsFor)), 'Result'] = 1
 
-    # If high and medium danger shots are equal, check if one team has more high danger shots.
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        np.logical_and(
-                                            df.highDangerShotsFor + df.lowDangerShotsFor == df.highDangerShotsAgainst + df.lowDangerShotsAgainst,
-                                            df.highDangerShotsFor > df.highDangerShotsAgainst)),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        np.logical_and(
-                                            df.highDangerShotsAgainst + df.lowDangerShotsAgainst == df.highDangerShotsFor + df.lowDangerShotsFor,
-                                            df.highDangerShotsAgainst > df.highDangerShotsFor))), 'Result'] = 1
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            df.highDangerShotsFor + df.lowDangerShotsFor > df.highDangerShotsAgainst + df.lowDangerShotsAgainst),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.highDangerShotsAgainst + df.lowDangerShotsAgainst > df.highDangerShotsFor + df.lowDangerShotsFor)), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+        # If high and medium danger shots are equal, check if one team has more high danger shots.
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            np.logical_and(
+                                                df.highDangerShotsFor + df.lowDangerShotsFor == df.highDangerShotsAgainst + df.lowDangerShotsAgainst,
+                                                df.highDangerShotsFor > df.highDangerShotsAgainst)),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            np.logical_and(
+                                                df.highDangerShotsAgainst + df.lowDangerShotsAgainst == df.highDangerShotsFor + df.lowDangerShotsFor,
+                                                df.highDangerShotsAgainst > df.highDangerShotsFor))), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              df.highDangerShotsFor + df.lowDangerShotsFor > df.highDangerShotsAgainst + df.lowDangerShotsAgainst), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nHigh and low danger shots n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with more high and low danger shots combined: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+        # If high and medium danger shots are equal, check if one team has more high danger shots.
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              np.logical_and(
+                                  df.highDangerShotsFor + df.lowDangerShotsFor == df.highDangerShotsAgainst + df.lowDangerShotsAgainst,
+                                  df.highDangerShotsFor > df.highDangerShotsAgainst)), 'Result'] = 1
+
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def low_danger_and_rebounds_sum(filepath, season_year):
@@ -216,21 +221,17 @@ def low_danger_and_rebounds_sum(filepath, season_year):
 
     # Check if team with more combined low danger shots and rebounds had more wins. Equal sums counts as a failure.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.reboundsFor + df.lowDangerShotsFor > df.reboundsAgainst + df.lowDangerShotsAgainst),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.reboundsAgainst + df.lowDangerShotsAgainst > df.reboundsFor + df.lowDangerShotsFor)), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            df.reboundsFor + df.lowDangerShotsFor > df.reboundsAgainst + df.lowDangerShotsAgainst),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.reboundsAgainst + df.lowDangerShotsAgainst > df.reboundsFor + df.lowDangerShotsFor)), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              df.reboundsFor + df.lowDangerShotsFor > df.reboundsAgainst + df.lowDangerShotsAgainst), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nLow danger shots and rebounds (sum) n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with more low danger shots and rebounds combined: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def rebounds_and_low_danger_shots_ratio(filepath, season_year):
@@ -249,21 +250,17 @@ def rebounds_and_low_danger_shots_ratio(filepath, season_year):
 
     # Check if team with a higher ratio of rebounds to low danger shots had more wins. Equal ratios count as a failure.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.reboundsFor / df.lowDangerShotsFor > df.reboundsAgainst / df.lowDangerShotsAgainst),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.reboundsAgainst / df.lowDangerShotsAgainst > df.reboundsFor / df.lowDangerShotsFor)), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            df.reboundsFor / df.lowDangerShotsFor > df.reboundsAgainst / df.lowDangerShotsAgainst),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.reboundsAgainst / df.lowDangerShotsAgainst > df.reboundsFor / df.lowDangerShotsFor)), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              df.reboundsFor / df.lowDangerShotsFor > df.reboundsAgainst / df.lowDangerShotsAgainst), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nRebounds and low danger shots (ratio) n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with a higher ratio of rebounds to low danger shots: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def medium_and_high_danger_and_rebounds_sum(filepath, season_year):
@@ -282,21 +279,17 @@ def medium_and_high_danger_and_rebounds_sum(filepath, season_year):
 
     # Check if team with more combined med/high danger shots and rebounds had more wins. Equal sums counts as a failure.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor > df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst > df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor)), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor > df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst > df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor)), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
+                              df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor > df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nMedium and high danger shots and rebounds (sum) n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with more medium and high danger shots and rebounds combined: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
@@ -315,25 +308,22 @@ def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
 
     # Check if team with a higher ratio of rebounds to low danger shots had more wins. Equal ratios count as a failure.
     df['Result'] = 0
-    df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
-                                        df.reboundsFor / (
-                                                df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
-                                                df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)),
-                         np.logical_and(df.goalsAgainst > df.goalsFor,
-                                        df.reboundsAgainst / (
-                                                df.mediumDangerShotsAgainst + df.highDangerShotsAgainst) > df.reboundsFor / (
-                                                df.mediumDangerShotsFor + df.highDangerShotsFor))), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = df.shape[0]
-    p = float(df['Result'].sum()) / n
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst,
+                                            df.reboundsFor / (
+                                                    df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
+                                                    df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.reboundsAgainst / (
+                                                    df.mediumDangerShotsAgainst + df.highDangerShotsAgainst) > df.reboundsFor / (
+                                                    df.mediumDangerShotsFor + df.highDangerShotsFor))), 'Result'] = 1
+    else:
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst, df.reboundsFor / (
+                df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
+                                      df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nRebounds and medium/high danger shots (ratio) n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with a higher ratio of rebounds to medium/high danger shots: ' + str(df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+    calculate_and_display_results(filepath, df['Result'])
 
 
 def time_on_power_play(filepath, season_year):
@@ -357,21 +347,17 @@ def time_on_power_play(filepath, season_year):
 
     # Check if team with more goals had more time in power play (more time in 5 on 4 than the other team).
     all_data_df['Result'] = 0
-    all_data_df.loc[np.logical_or(np.logical_and(all_data_df.goalsFor > all_data_df.goalsAgainst,
-                                                 power_play_for.iceTime > power_play_against.iceTime),
-                                  np.logical_and(all_data_df.goalsAgainst > all_data_df.goalsFor,
-                                                 power_play_against.iceTime > power_play_for.iceTime)), 'Result'] = 1
 
-    # Calculate n (number of rows) and p (sum of the result column divided by n).
-    n = all_data_df.shape[0]
-    p = float(all_data_df['Result'].sum()) / n
+    if 'all_teams.csv' in filepath:
+        all_data_df.loc[np.logical_or(np.logical_and(all_data_df.goalsFor > all_data_df.goalsAgainst,
+                                                     power_play_for.iceTime > power_play_against.iceTime),
+                                      np.logical_and(all_data_df.goalsAgainst > all_data_df.goalsFor,
+                                                     power_play_against.iceTime > power_play_for.iceTime)), 'Result'] = 1
+    else:
+        all_data_df.loc[np.logical_and(all_data_df.goalsFor > all_data_df.goalsAgainst,
+                                       power_play_for.iceTime > power_play_against.iceTime), 'Result'] = 1
 
-    # Print results.
-    print(Fore.BLUE + '\nTime in power play n and p values: ')
-    print(Style.RESET_ALL)
-    print('Wins with more time in power play: ' + str(all_data_df['Result'].sum() / 2))
-    print('n value: ' + str(n / 2))
-    print('p value: ' + str(p))
+    calculate_and_display_results(filepath, all_data_df['Result'])
 
 
 def extract_data(filepath, columns, season_year, situation='all'):
@@ -427,16 +413,46 @@ def print_menu():
     print('3. Medium danger shots on win percentage')
     print('4. Low danger shots on win percentage')
     print('5. Having more rebounds on win percentage')
-    print('6. Medium and high danger shots (combined) on win percentage')
-    print('7. Low and high danger shots (combined) on win percentage')
-    print('8. Low danger shots and rebounds (combined) on win percentage')
-    print('9. Rebounds and low danger shots (ratio) on win percentage')
-    print('10. Medium/high danger shots and rebounds (combined) on win percentage')
-    print('11. Rebounds and medium/high danger shots (ratio) on win percentage')
-    print('12. Time in power play on win percentage')
-    print('13. Change file path.')
-    print('14. Exit')
+    print('6. Having more takeaways on win percentage')
+    print('7. Having more penalties on win percentage')
+    print('7. Having more penalty minutes on win percentage')
+    print('8. Medium and high danger shots (combined) on win percentage')
+    print('9. Low and high danger shots (combined) on win percentage')
+    print('10. Low danger shots and rebounds (combined) on win percentage')
+    print('11. Rebounds and low danger shots (ratio) on win percentage')
+    print('12. Medium/high danger shots and rebounds (combined) on win percentage')
+    print('13. Rebounds and medium/high danger shots (ratio) on win percentage')
+    print('14. Time in power play on win percentage')
+    print('15. Change file path.')
+    print('16. Exit')
     print()
+
+
+def calculate_and_display_results(filepath, results):
+    """
+    Calculates the n and p values of the hypothesis test.
+
+    :param filepath: The filepath that these results came from.
+    :param results: A pandas Series containing the results of the hypothesis tests.
+    """
+
+    # Calculate the number of successes as well as n and p. The all_teams file double counts each team so we must also
+    # divide it by 2.
+    if 'all_teams.csv' in filepath:
+        s = results.sum() / 2
+        n = results.size / 2
+        p = float(results.sum()) / (n * 2)
+    else:
+        s = results.sum()
+        n = results.size
+        p = float(results.sum()) / n
+
+    # Print results.
+    print(Fore.BLUE + '\nResultant n and p values: ')
+    print(Style.RESET_ALL)
+    print('Number of successes: ' + str(s))
+    print('n value: ' + str(n))
+    print('p value: ' + str(p))
 
 
 if __name__ == "__main__":
