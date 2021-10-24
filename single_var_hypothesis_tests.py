@@ -4,7 +4,7 @@ import os
 from colorama import Fore, Style
 
 # Does not include "exit".
-TOTAL_OPTIONS = 16
+TOTAL_OPTIONS = 17
 
 
 def main():
@@ -54,7 +54,8 @@ def main():
             12: lambda: rebounds_and_low_danger_shots_ratio(filepath, season),
             13: lambda: medium_and_high_danger_and_rebounds_sum(filepath, season),
             14: lambda: rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
-            15: lambda: time_on_power_play(filepath, season)
+            15: lambda: time_on_power_play(filepath, season),
+            16: lambda: playoff_shots_on_goal(filepath, season)
         }
 
         if choice < TOTAL_OPTIONS:
@@ -78,7 +79,14 @@ def main():
                     print(Style.RESET_ALL)
 
             f = switch.get(choice)
-            f()
+            result = f()
+
+            # Check to make sure we are not running our hypothesis tests on data that doesn't exist.
+            if result.shape[0] != 0:
+                calculate_and_display_results(filepath, result)
+            else:
+                print('Error. This team may not have played in the NHL during this season.')
+
         elif choice == TOTAL_OPTIONS:
             filepath = get_file()
         print()
@@ -92,6 +100,7 @@ def single_col_for_and_against(filepath, season_year, col_name):
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
     :param col_name: The name of the column to be analyzed
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     for_col = col_name + 'For'
@@ -114,7 +123,7 @@ def single_col_for_and_against(filepath, season_year, col_name):
         df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
                               getattr(df, for_col) > getattr(df, against_col)), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def high_and_med_danger(filepath, season_year):
@@ -123,6 +132,7 @@ def high_and_med_danger(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the relevant data.
@@ -158,7 +168,7 @@ def high_and_med_danger(filepath, season_year):
                                   df.highDangerShotsFor + df.mediumDangerShotsFor == df.highDangerShotsAgainst + df.mediumDangerShotsAgainst,
                                   df.highDangerShotsFor > df.highDangerShotsAgainst)), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def high_and_low_danger(filepath, season_year):
@@ -167,6 +177,7 @@ def high_and_low_danger(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the relevant data.
@@ -202,7 +213,7 @@ def high_and_low_danger(filepath, season_year):
                                   df.highDangerShotsFor + df.lowDangerShotsFor == df.highDangerShotsAgainst + df.lowDangerShotsAgainst,
                                   df.highDangerShotsFor > df.highDangerShotsAgainst)), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def low_danger_and_rebounds_sum(filepath, season_year):
@@ -212,6 +223,7 @@ def low_danger_and_rebounds_sum(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the relevant data.
@@ -231,7 +243,7 @@ def low_danger_and_rebounds_sum(filepath, season_year):
         df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
                               df.reboundsFor + df.lowDangerShotsFor > df.reboundsAgainst + df.lowDangerShotsAgainst), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def rebounds_and_low_danger_shots_ratio(filepath, season_year):
@@ -241,6 +253,7 @@ def rebounds_and_low_danger_shots_ratio(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the relevant data.
@@ -260,7 +273,7 @@ def rebounds_and_low_danger_shots_ratio(filepath, season_year):
         df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
                               df.reboundsFor / df.lowDangerShotsFor > df.reboundsAgainst / df.lowDangerShotsAgainst), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def medium_and_high_danger_and_rebounds_sum(filepath, season_year):
@@ -270,6 +283,7 @@ def medium_and_high_danger_and_rebounds_sum(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the relevant data.
@@ -289,7 +303,7 @@ def medium_and_high_danger_and_rebounds_sum(filepath, season_year):
         df.loc[np.logical_and(df.goalsFor > df.goalsAgainst,
                               df.reboundsFor + df.mediumDangerShotsFor + df.highDangerShotsFor > df.reboundsAgainst + df.mediumDangerShotsAgainst + df.highDangerShotsAgainst), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
@@ -299,6 +313,7 @@ def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the relevant data.
@@ -323,7 +338,7 @@ def rebounds_and_medium_and_high_danger_shots_ratio(filepath, season_year):
                 df.mediumDangerShotsFor + df.highDangerShotsFor) > df.reboundsAgainst / (
                                       df.mediumDangerShotsAgainst + df.highDangerShotsAgainst)), 'Result'] = 1
 
-    calculate_and_display_results(filepath, df['Result'])
+    return df['Result']
 
 
 def time_on_power_play(filepath, season_year):
@@ -333,6 +348,7 @@ def time_on_power_play(filepath, season_year):
 
     :param filepath: The path that contains the hockey data.
     :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
     """
 
     # Extract the data from the "all" row to check for the winner of the game.
@@ -357,7 +373,42 @@ def time_on_power_play(filepath, season_year):
         all_data_df.loc[np.logical_and(all_data_df.goalsFor > all_data_df.goalsAgainst,
                                        power_play_for.iceTime > power_play_against.iceTime), 'Result'] = 1
 
-    calculate_and_display_results(filepath, all_data_df['Result'])
+    return all_data_df['Result']
+
+
+def playoff_shots_on_goal(filepath, season_year):
+    """
+    Calculate and print n and p values for hypothesis test regarding playoff shots on goal. Modified from code written
+    by Will Debolt and Harvey Campos-Chavez.
+
+    :param filepath: The path that contains the hockey data.
+    :param season_year: The season to be analyzed.
+    :return A pandas Series containing the successes (as ones) and the losses (as zeros).
+    """
+
+    index = filepath.find('.csv')
+    team = filepath[index - 3:index]
+
+    # Extract the relevant data.
+    df = extract_data('all_teams.csv',
+                      ['team', 'season', 'situation', 'iceTime', 'shotsOnGoalFor', 'goalsFor', 'shotsOnGoalAgainst',
+                       'goalsAgainst', 'playoffGame'], season_year)
+
+    # Only consider playoff games.
+    df = df[df.playoffGame == 1]
+    df['Result'] = 0
+
+    if 'all_teams.csv' in filepath:
+        df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, df.shotsOnGoalFor > df.shotsOnGoalAgainst),
+                             np.logical_and(df.goalsAgainst > df.goalsFor,
+                                            df.shotsOnGoalAgainst > df.shotsOnGoalFor)), 'Result'] = 1
+    else:
+
+        # Only look at the teams we are interested in.
+        df = df[df.team == team]
+        df.loc[np.logical_and(df.goalsFor > df.goalsAgainst, df.shotsOnGoalFor > df.shotsOnGoalAgainst), 'Result'] = 1
+
+    return df['Result']
 
 
 def extract_data(filepath, columns, season_year, situation='all'):
@@ -415,16 +466,17 @@ def print_menu():
     print('5. Having more rebounds on win percentage')
     print('6. Having more takeaways on win percentage')
     print('7. Having more penalties on win percentage')
-    print('7. Having more penalty minutes on win percentage')
-    print('8. Medium and high danger shots (combined) on win percentage')
-    print('9. Low and high danger shots (combined) on win percentage')
-    print('10. Low danger shots and rebounds (combined) on win percentage')
-    print('11. Rebounds and low danger shots (ratio) on win percentage')
-    print('12. Medium/high danger shots and rebounds (combined) on win percentage')
-    print('13. Rebounds and medium/high danger shots (ratio) on win percentage')
-    print('14. Time in power play on win percentage')
-    print('15. Change file path.')
-    print('16. Exit')
+    print('8. Having more penalty minutes on win percentage')
+    print('9. Medium and high danger shots (combined) on win percentage')
+    print('10. Low and high danger shots (combined) on win percentage')
+    print('11. Low danger shots and rebounds (combined) on win percentage')
+    print('12. Rebounds and low danger shots (ratio) on win percentage')
+    print('13. Medium/high danger shots and rebounds (combined) on win percentage')
+    print('14. Rebounds and medium/high danger shots (ratio) on win percentage')
+    print('15. Time in power play on win percentage')
+    print('16. Playoff shots on goal')
+    print('17. Change file path.')
+    print('18. Exit')
     print()
 
 
