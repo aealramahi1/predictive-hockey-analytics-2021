@@ -14,9 +14,10 @@ def save_all_data():
     """
 
     # Extract relevant columns from the all_teams.csv file (which must be in the same folder as this script).
-    df = pd.read_csv(filepath_or_buffer='all_teams.csv', delimiter=',', header=0, usecols=['team', 'season', 'situation',
-                                                                                           'iceTime', 'goalsFor',
-                                                                                           'goalsAgainst', 'playoffGame'])
+    df = pd.read_csv(filepath_or_buffer='all_teams.csv', delimiter=',', header=0,
+                     usecols=['team', 'season', 'situation',
+                              'iceTime', 'goalsFor',
+                              'goalsAgainst', 'playoffGame'])
 
     # Extract rows of games that didn't go into overtime if the situation is 'all'.
     df = df[np.logical_and(np.logical_and(df.situation == 'all', df.iceTime == 3600), df.playoffGame == 0)]
@@ -28,7 +29,8 @@ def save_all_data():
     for team in teams:
         for year in range(2008, 2008 + NUM_SEASON_YEARS):
             total_games = df.loc[np.logical_and(df.team == team, df.season == year)].shape[0]
-            wins = df.loc[np.logical_and(np.logical_and(df.team == team, df.season == year), df.goalsFor > df.goalsAgainst)].shape[0]
+            wins = df.loc[np.logical_and(np.logical_and(df.team == team, df.season == year),
+                                         df.goalsFor > df.goalsAgainst)].shape[0]
             losses = total_games - wins
 
             # Some teams did not play in all seasons.
@@ -37,7 +39,8 @@ def save_all_data():
                 collected_data.append([team, year, wins, losses, win_percentage])
 
     # Put data into a data frame and save to an Excel file.
-    df = pd.DataFrame(collected_data, columns=['Team', 'Season', 'Number of Wins', 'Number of Losses', 'Season Win Percentage'])
+    df = pd.DataFrame(collected_data,
+                      columns=['Team', 'Season', 'Number of Wins', 'Number of Losses', 'Season Win Percentage'])
     df.to_csv('team_records.csv', encoding='utf-8')
 
 
@@ -50,9 +53,10 @@ def produce_team_record(team):
     """
 
     # Extract relevant columns from the all_teams.csv file (which must be in the same folder as this script).
-    df = pd.read_csv(filepath_or_buffer='all_teams.csv', delimiter=',', header=0, usecols=['team', 'season', 'situation',
-                                                                                           'iceTime', 'goalsFor',
-                                                                                           'goalsAgainst', 'playoffGame'])
+    df = pd.read_csv(filepath_or_buffer='all_teams.csv', delimiter=',', header=0,
+                     usecols=['team', 'season', 'situation',
+                              'iceTime', 'goalsFor',
+                              'goalsAgainst', 'playoffGame'])
 
     # Extract rows of games that didn't go into overtime if the situation is 'all'.
     df = df[np.logical_and(np.logical_and(df.situation == 'all', df.iceTime == 3600), df.playoffGame == 0)]
@@ -74,6 +78,25 @@ def produce_team_record(team):
             collected_data.append([])
 
     return collected_data
+
+
+def produce_num_of_wins(team, year):
+    """
+    Return the number of wins for the specified team in the specified season.
+
+    :param team: The three-letter name of the team.
+    :param year: The season year to be analyzed for this team.
+    :return: The number of wins for this team in this season.
+    """
+
+    # Extract relevant columns from the all_teams.csv file (which must be in the same folder as this script).
+    df = pd.read_csv(filepath_or_buffer='all_teams.csv', delimiter=',', header=0,
+                     usecols=['team', 'season', 'situation', 'iceTime', 'goalsFor', 'goalsAgainst', 'playoffGame'])
+
+    # Extract rows of games that didn't go into overtime if the situation is 'all'.
+    df = df[np.logical_and(np.logical_and(df.situation == 'all', df.iceTime == 3600), df.playoffGame == 0)]
+    df = df[df.team == team]
+    return df.loc[np.logical_and(df.season == year, df.goalsFor > df.goalsAgainst)].shape[0]
 
 
 if __name__ == "__main__":

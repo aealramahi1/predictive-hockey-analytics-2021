@@ -4,6 +4,8 @@ import os
 from colorama import Fore, Style
 
 # Does not include "exit".
+import produce_team_record
+
 TOTAL_OPTIONS = 17
 
 
@@ -83,7 +85,7 @@ def main():
 
             # Check to make sure we are not running our hypothesis tests on data that doesn't exist.
             if result.shape[0] != 0:
-                calculate_and_display_results(filepath, result)
+                calculate_and_display_results(filepath, result, season)
             else:
                 print('Error. This team may not have played in the NHL during this season.')
 
@@ -480,12 +482,13 @@ def print_menu():
     print()
 
 
-def calculate_and_display_results(filepath, results):
+def calculate_and_display_results(filepath, results, season):
     """
     Calculates the n and p values of the hypothesis test.
 
     :param filepath: The filepath that these results came from.
     :param results: A pandas Series containing the results of the hypothesis tests.
+    :param season: The season being analyzed.
     """
 
     # Calculate the number of successes as well as n and p. The all_teams file double counts each team so we must also
@@ -497,7 +500,12 @@ def calculate_and_display_results(filepath, results):
     else:
         s = results.sum()
         n = results.size
-        p = float(results.sum()) / n
+
+        # Get the number of wins for this team.
+        index = filepath.find('.csv')
+        team = filepath[index - 3:index]
+
+        p = float(results.sum()) / produce_team_record.produce_num_of_wins(team, season)
 
     # Print results.
     print(Fore.BLUE + '\nResultant n and p values: ')

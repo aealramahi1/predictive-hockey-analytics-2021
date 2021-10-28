@@ -20,7 +20,7 @@ def main():
 
     # Open up the Excel file and create a writer for the new data we are producing.
     xls = pd.ExcelFile('Hypothesis Tests.xlsx')
-    writer = pd.ExcelWriter('Produced Hypothesis Tests.xlsx')
+    writer = pd.ExcelWriter('Produced Hypothesis Tests UPDATED.xlsx')
 
     # Produce the data for each sheet.
     for team in teams:
@@ -66,7 +66,7 @@ def main():
                         p = float(results.sum()) / n
                     else:
                         n = results.size
-                        p = float(results.sum()) / n
+                        p = float(results.sum()) / produce_team_record.produce_num_of_wins(team, year)
                 else:
                     n = 0
                     p = 0
