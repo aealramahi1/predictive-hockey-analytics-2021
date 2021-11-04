@@ -80,6 +80,42 @@ def produce_team_record(team):
     return collected_data
 
 
+def produce_all_team_records_by_year(year):
+    """
+    Extracts information about the wins and losses of each individual team (in alphabetical order) season-by-season.
+
+    :param year: The year of interest.
+    :return: A list of lists containing wins, losses, and win percentage for each team during the specified year.
+    """
+
+    # Extract relevant columns from the all_teams.csv file (which must be in the same folder as this script).
+    df = pd.read_csv(filepath_or_buffer='all_teams.csv', delimiter=',', header=0,
+                     usecols=['team', 'season', 'situation',
+                              'iceTime', 'goalsFor',
+                              'goalsAgainst', 'playoffGame'])
+
+    # Extract rows of games that didn't go into overtime if the situation is 'all'.
+    df = df[np.logical_and(np.logical_and(df.situation == 'all', df.iceTime == 3600), df.playoffGame == 0)]
+    df = df[df.season == year]
+
+    # Create a list of lists with the collected data that we will return.
+    collected_data = []
+
+    for team in teams:
+        total_games = df.loc[df.team == team].shape[0]
+        wins = df.loc[np.logical_and(df.team == team, df.goalsFor > df.goalsAgainst)].shape[0]
+        losses = total_games - wins
+
+        # Some teams did not play in all seasons.
+        if total_games > 0:
+            win_percentage = wins / total_games
+            collected_data.append([wins, losses, win_percentage])
+        else:
+            collected_data.append([])
+
+    return collected_data
+
+
 def produce_num_of_wins(team, year):
     """
     Return the number of wins for the specified team in the specified season.

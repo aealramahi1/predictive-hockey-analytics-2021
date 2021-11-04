@@ -402,8 +402,8 @@ def playoff_shots_on_goal(filepath, season_year):
 
     if 'all_teams.csv' in filepath:
         df.loc[np.logical_or(np.logical_and(df.goalsFor > df.goalsAgainst, df.shotsOnGoalFor > df.shotsOnGoalAgainst),
-                             np.logical_and(df.goalsAgainst > df.goalsFor,
-                                            df.shotsOnGoalAgainst > df.shotsOnGoalFor)), 'Result'] = 1
+                         np.logical_and(df.goalsAgainst > df.goalsFor,
+                                        df.shotsOnGoalAgainst > df.shotsOnGoalFor)), 'Result'] = 1
     else:
 
         # Only look at the teams we are interested in.
