@@ -28,13 +28,13 @@ def save_data(variable_sets, save_names, by_team):
     :param save_names: List of Strings containing the names of the variable sets (parallel to variable_sets)
     :param by_team: Boolean indicating whether the data within each sheet should be organized by team or by year.
     """
+    name = 'team' if by_team else 'year'
+    writer = pd.ExcelWriter('Produced Totals By ' + name + '.xlsx')
     for i in range(0, len(variable_sets)):
         if by_team:
-            writer = pd.ExcelWriter('Produced Totals By Team.xlsx')
             collected_data = collect_var_data_by_team(variable_sets[i])
             df = pd.DataFrame(collected_data, columns=['Team', 'Year', 'Totals'])
         else:
-            writer = pd.ExcelWriter('Produced Totals By Year.xlsx')
             collected_data = collect_var_data_by_year(variable_sets[i])
             df = pd.DataFrame(collected_data, columns=['Year', 'Team', 'Totals'])
         df.to_excel(writer, sheet_name=save_names[i])
