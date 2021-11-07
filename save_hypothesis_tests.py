@@ -10,6 +10,26 @@ teams = ['all_teams', 'ANA', 'ARI', 'BOS', 'BUF', 'CAR', 'CBJ', 'CGY', 'CHI', 'C
          'MIN', 'MTL', 'N.J', 'NSH', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT', 'S.J', 'STL', 'T.B', 'TOR', 'VAN', 'VGK', 'WPG',
          'WSH']
 
+# Define a dictionary containing all of the hypothesis tests.
+tests = {
+    1: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'shotsOnGoal'),
+    2: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'highDangerShots'),
+    3: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'mediumDangerShots'),
+    4: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'lowDangerShots'),
+    5: lambda filepath, season: hyp_tests.high_and_med_danger(filepath, season),
+    6: lambda filepath, season: hyp_tests.high_and_low_danger(filepath, season),
+    7: lambda filepath, season: hyp_tests.low_danger_and_rebounds_sum(filepath, season),
+    8: lambda filepath, season: hyp_tests.rebounds_and_low_danger_shots_ratio(filepath, season),
+    9: lambda filepath, season: hyp_tests.time_on_power_play(filepath, season),
+    10: lambda filepath, season: hyp_tests.medium_and_high_danger_and_rebounds_sum(filepath, season),
+    11: lambda filepath, season: hyp_tests.rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
+    12: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'takeaways'),
+    13: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'penalityMinutes'),
+    14: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'penalties'),
+    15: lambda filepath, season: hyp_tests.playoff_shots_on_goal(filepath, season),
+    16: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'rebounds')
+}
+
 
 def team_by_team():
     """
@@ -29,26 +49,6 @@ def team_by_team():
         # List of lists that we will place into the sheet.
         n_values = []
         p_values = []
-
-        # Define a dictionary containing all of the hypothesis tests.
-        tests = {
-            1: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'shotsOnGoal'),
-            2: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'highDangerShots'),
-            3: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'mediumDangerShots'),
-            4: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'lowDangerShots'),
-            5: lambda filepath, season: hyp_tests.high_and_med_danger(filepath, season),
-            6: lambda filepath, season: hyp_tests.high_and_low_danger(filepath, season),
-            7: lambda filepath, season: hyp_tests.low_danger_and_rebounds_sum(filepath, season),
-            8: lambda filepath, season: hyp_tests.rebounds_and_low_danger_shots_ratio(filepath, season),
-            9: lambda filepath, season: hyp_tests.time_on_power_play(filepath, season),
-            10: lambda filepath, season: hyp_tests.medium_and_high_danger_and_rebounds_sum(filepath, season),
-            11: lambda filepath, season: hyp_tests.rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
-            12: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'takeaways'),
-            13: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'penalityMinutes'),
-            14: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'penalties'),
-            15: lambda filepath, season: hyp_tests.playoff_shots_on_goal(filepath, season),
-            16: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'rebounds')
-        }
 
         # Run each hypothesis test for every season year.
         for i in range(1, hyp_tests.TOTAL_OPTIONS):
@@ -115,26 +115,6 @@ def year_by_year():
         # List of lists that we will place into the sheet.
         n_values = []
         p_values = []
-
-        # Define a dictionary containing all of the hypothesis tests.
-        tests = {
-            1: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'shotsOnGoal'),
-            2: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'highDangerShots'),
-            3: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'mediumDangerShots'),
-            4: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'lowDangerShots'),
-            5: lambda filepath, season: hyp_tests.high_and_med_danger(filepath, season),
-            6: lambda filepath, season: hyp_tests.high_and_low_danger(filepath, season),
-            7: lambda filepath, season: hyp_tests.low_danger_and_rebounds_sum(filepath, season),
-            8: lambda filepath, season: hyp_tests.rebounds_and_low_danger_shots_ratio(filepath, season),
-            9: lambda filepath, season: hyp_tests.time_on_power_play(filepath, season),
-            10: lambda filepath, season: hyp_tests.medium_and_high_danger_and_rebounds_sum(filepath, season),
-            11: lambda filepath, season: hyp_tests.rebounds_and_medium_and_high_danger_shots_ratio(filepath, season),
-            12: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'takeaways'),
-            13: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'penalityMinutes'),
-            14: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'penalties'),
-            15: lambda filepath, season: hyp_tests.playoff_shots_on_goal(filepath, season),
-            16: lambda filepath, season: hyp_tests.single_col_for_and_against(filepath, season, 'rebounds')
-        }
 
         # Produce the team record and add it to the sheet...skip all_teams.
         for team in teams[1:]:
