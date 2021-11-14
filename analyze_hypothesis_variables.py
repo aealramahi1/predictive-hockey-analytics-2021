@@ -13,8 +13,10 @@ def main():
     """
     Runner method.
     """
-    variable_sets = [['shotsOnGoalFor'], ['mediumDangerShotsFor', 'highDangerShotsFor']]
-    save_names = ['Shots On Goal', 'Medium And High Danger Shots']
+    variable_sets = [['highDangerShotsFor'], ['lowDangerShotsFor'], ['lowDangerShotsFor', 'highDangerShotsFor'],
+                     ['penalityMinutesFor'], ['penaltiesFor'], ['reboundsFor']]
+    save_names = ['High Danger Shots', 'Low Danger Shots', 'Low and High Danger Shots', 'Penalty Minutes',
+                  'Total Penalties', 'Rebounds']
     save_data(variable_sets, save_names, True)
     save_data(variable_sets, save_names, False)
 
@@ -28,7 +30,7 @@ def save_data(variable_sets, save_names, by_team):
     :param save_names: List of Strings containing the names of the variable sets (parallel to variable_sets)
     :param by_team: Boolean indicating whether the data within each sheet should be organized by team or by year.
     """
-    name = 'team' if by_team else 'year'
+    name = 'Team' if by_team else 'Year'
     writer = pd.ExcelWriter('Produced Totals By ' + name + '.xlsx')
     for i in range(0, len(variable_sets)):
         if by_team:
@@ -103,7 +105,7 @@ def total_var(team, year, variables):
 
         total = 0
         for var in variables:
-            total = total + df[var].sum()
+            total += df[var].sum()
         return total
     except KeyError:
         return -1
