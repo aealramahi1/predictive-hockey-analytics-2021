@@ -4,7 +4,7 @@ import os
 from colorama import Fore, Style
 
 # Does not include "exit".
-TOTAL_OPTIONS = 2
+TOTAL_OPTIONS = 3
 
 
 def main():
@@ -40,7 +40,8 @@ def main():
 
         # Use a dictionary definition as a mock switch statement to choose the appropriate function.
         switch = {
-            1: lambda: last_five_med_high_low_danger(filepath, season)
+            1: lambda: last_five_med_high_low_danger(filepath, season),
+            2: lambda: last_five_med_high_low_danger_formula(filepath, season)
         }
 
         if choice < TOTAL_OPTIONS:
@@ -90,14 +91,6 @@ def last_five_med_high_low_danger(filepath, season_year):
     mh_for = df['mediumDangerShotsFor'] + df['highDangerShotsFor']
     mh_against = df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']
 
-    # zero = pd.Series([0])
-
-    # med_high_for = zero.append(np.cumsum(mh_for))
-    # low_for = zero.append(np.cumsum(df['lowDangerShotsFor']))
-    #
-    # med_high_against = zero.append(np.cumsum(mh_against))
-    # low_against = zero.append(np.cumsum(df['lowDangerShotsAgainst']))
-
     med_high_for = np.cumsum(mh_for)
     low_for = np.cumsum(df['lowDangerShotsFor'])
 
@@ -118,6 +111,44 @@ def last_five_med_high_low_danger(filepath, season_year):
         if df['goalsFor'][i] > df['goalsAgainst'][i] and mf > ma and lf < la:
             p += 1
         elif df['goalsFor'][i] < df['goalsAgainst'][i] and mf < ma and lf > la:
+            p += 1
+
+    print(p / n)
+
+
+def last_five_med_high_low_danger_formula(filepath, season_year):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) that abide by a
+    formula involving low, medium, and high danger shots (medium danger shots + high danger shots - low danger shots).
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'mediumDangerShotsAgainst', 'highDangerShotsFor', 'highDangerShotsAgainst',
+                                 'lowDangerShotsFor', 'lowDangerShotsAgainst'],
+                      season_year)
+
+    # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
+    for_team = df['mediumDangerShotsFor'] + df['highDangerShotsFor'] - df['lowDangerShotsFor']
+    against_team = df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst'] - df['lowDangerShotsAgainst']
+
+    fteam = np.cumsum(for_team)
+    ateam = np.cumsum(against_team)
+
+    n = fteam.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        f = fteam[i] - fteam[i - 5]
+        a = ateam[i] - ateam[i - 5]
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and f > a:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and f < a:
             p += 1
 
     print(p / n)
@@ -168,8 +199,9 @@ def print_menu():
     """
     print('\n\nPlease choose one of the hypothesis tests below (all teams in the season):')
     print('1. Medium/High Danger Shots and Low Danger Shots (previous five games)')
-    print('2. Switch filepath')
-    print('3. Exit')
+    print('2. Medium/High Danger Shots and Low Danger Shots (previous five games) Formula')
+    print('3. Switch filepath')
+    print('4. Exit')
     print()
 
 
