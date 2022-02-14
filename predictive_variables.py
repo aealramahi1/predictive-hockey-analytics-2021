@@ -4,7 +4,7 @@ import os
 from colorama import Fore, Style
 
 # Does not include "exit".
-TOTAL_OPTIONS = 3
+TOTAL_OPTIONS = 6
 
 
 def main():
@@ -40,8 +40,11 @@ def main():
 
         # Use a dictionary definition as a mock switch statement to choose the appropriate function.
         switch = {
-            1: lambda: last_five_med_high_low_danger(filepath, season),
-            2: lambda: last_five_med_high_low_danger_formula(filepath, season)
+            1: lambda: last_five_med_high_low_danger_buckets(filepath, season),
+            2: lambda: last_five_med_high_low_danger_formula(filepath, season),
+            3: lambda: last_five_med_high_low_danger(filepath, season),
+            4: lambda: last_five_med_high_danger_penalty_minutes(filepath, season),
+            5: lambda: last_five_med_high_danger_rebounds(filepath, season)
         }
 
         if choice < TOTAL_OPTIONS:
@@ -72,7 +75,7 @@ def main():
         print()
 
 
-def last_five_med_high_low_danger(filepath, season_year):
+def last_five_med_high_low_danger_buckets(filepath, season_year):
     """
     Calculate the percentage of winning games in the given season (except the first five games) where the first previous
     five games had more medium/high danger shots combined as well as less low danger shots. Prints this result.
@@ -154,6 +157,140 @@ def last_five_med_high_low_danger_formula(filepath, season_year):
     print(p / n)
 
 
+def last_five_med_high_low_danger(filepath, season_year):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) where the first previous
+    five games had more games with medium/high danger shots combined as well as less low danger shots. Prints this
+    result.
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'mediumDangerShotsAgainst', 'highDangerShotsFor', 'highDangerShotsAgainst',
+                                 'lowDangerShotsFor', 'lowDangerShotsAgainst'],
+                      season_year)
+
+    # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
+    mh_for = df['mediumDangerShotsFor'] + df['highDangerShotsFor']
+    mh_against = df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']
+
+    low_for = df['lowDangerShotsFor']
+    low_against = df['lowDangerShotsAgainst']
+
+    n = mh_for.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        success_for = 0
+        success_against = 0
+
+        for j in range(1, 6):
+            if mh_for[i - j] > mh_against[i - j] and low_for[i - j] < low_against[i - j]:
+                success_for += 1
+            elif mh_for[i - j] < mh_against[i - j] and low_for[i - j] > low_against[i - j]:
+                success_against += 1
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and success_for > success_against:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and success_for < success_against:
+            p += 1
+
+    print(p / n)
+
+
+def last_five_med_high_danger_penalty_minutes(filepath, season_year):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) where the first previous
+    five games had more games with medium/high danger shots combined as well as less penalty minutes. Prints this
+    result.
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'mediumDangerShotsAgainst', 'highDangerShotsFor', 'highDangerShotsAgainst',
+                                 'penaltyMinutesFor', 'penaltyMinutesAgainst'],
+                      season_year)
+
+    # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
+    mh_for = df['mediumDangerShotsFor'] + df['highDangerShotsFor']
+    mh_against = df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']
+
+    p_for = df['penalityMinutesFor']
+    p_against = df['penalityMinutesAgainst']
+
+    n = mh_for.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        success_for = 0
+        success_against = 0
+
+        for j in range(1, 6):
+            if mh_for[i - j] > mh_against[i - j] and p_for[i - j] < p_against[i - j]:
+                success_for += 1
+            elif mh_for[i - j] < mh_against[i - j] and p_for[i - j] > p_against[i - j]:
+                success_against += 1
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and success_for > success_against:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and success_for < success_against:
+            p += 1
+
+    print(p / n)
+
+
+def last_five_med_high_danger_rebounds(filepath, season_year):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) where the first previous
+    five games had more games with medium/high danger shots combined as well as less rebounds. Prints this result.
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'mediumDangerShotsAgainst', 'highDangerShotsFor', 'highDangerShotsAgainst',
+                                 'reboundsFor', 'reboundsAgainst'],
+                      season_year)
+
+    # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
+    mh_for = df['mediumDangerShotsFor'] + df['highDangerShotsFor']
+    mh_against = df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']
+
+    r_for = df['reboundsFor']
+    r_against = df['reboundsAgainst']
+
+    n = mh_for.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        success_for = 0
+        success_against = 0
+
+        for j in range(1, 6):
+            if mh_for[i - j] > mh_against[i - j] and r_for[i - j] < r_against[i - j]:
+                success_for += 1
+            elif mh_for[i - j] < mh_against[i - j] and r_for[i - j] > r_against[i - j]:
+                success_against += 1
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and success_for > success_against:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and success_for < success_against:
+            p += 1
+
+    print(p / n)
+
+
 def extract_data(filepath, columns, season_year):
     """
     Extract the relevant data from the CSV file. Games are indexed by their ID automatically (do not pass in as column).
@@ -198,10 +335,13 @@ def print_menu():
     Prints a menu of options for the user to choose from.
     """
     print('\n\nPlease choose one of the hypothesis tests below (all teams in the season):')
-    print('1. Medium/High Danger Shots and Low Danger Shots (previous five games)')
+    print('1. Medium/High Danger Shots and Low Danger Shots (previous five games) Buckets')
     print('2. Medium/High Danger Shots and Low Danger Shots (previous five games) Formula')
-    print('3. Switch filepath')
-    print('4. Exit')
+    print('3. Medium/High Danger Shots and Low Danger Shots (previous five games)')
+    print('4. Medium/High Danger Shots and Penalty Minutes (previous five games)')
+    print('5. Medium/High Danger Shots and Rebounds (previous five games)')
+    print('6. Switch filepath')
+    print('7. Exit')
     print()
 
 
