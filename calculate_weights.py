@@ -4,7 +4,7 @@ import os
 from colorama import Fore, Style
 
 # Does not include "exit".
-TOTAL_OPTIONS = 3
+TOTAL_OPTIONS = 5
 
 
 def main():
@@ -88,6 +88,36 @@ def main():
                 results.to_excel(writer, sheet_name=filepath[:-4])
                 writer.save()
 
+            elif choice == 3:
+
+                p_results = [0] * 100
+
+                # Parametric analysis changing the weight on penalty minutes.
+                for weight in range(5, 505, 5):
+                    mh_weight = weight / 100.0
+                    p_results[int(weight / 5 - 1)] = last_five_med_high_danger_penalty_minutes_formula(filepath, season, mh_weight, 1)
+
+                # Write the results to an Excel file.
+                writer = pd.ExcelWriter('Penalty Minutes Weights.xlsx')
+                results = pd.Series(p_results)
+                results.to_excel(writer, sheet_name=filepath[:-4])
+                writer.save()
+
+            elif choice == 4:
+                p_results = [0] * 100
+
+                # Parametric analysis changing the weight on penalty minutes.
+                for weight in range(5, 505, 5):
+                    s_weight = weight / 100.0
+                    p_results[int(weight / 5 - 1)] = last_five_med_high_danger_shots_on_goal_formula(filepath, season,
+                                                                                                       s_weight)
+
+                # Write the results to an Excel file.
+                writer = pd.ExcelWriter('Shots On Goal Weights.xlsx')
+                results = pd.Series(p_results)
+                results.to_excel(writer, sheet_name=filepath[:-4])
+                writer.save()
+
         elif choice == TOTAL_OPTIONS:
             filepath = get_file()
         print()
@@ -115,6 +145,89 @@ def last_five_med_high_low_danger_formula(filepath, season_year, mh_weight, l_we
     # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
     for_team = mh_weight * (df['mediumDangerShotsFor'] + df['highDangerShotsFor']) - l_weight * df['lowDangerShotsFor']
     against_team = mh_weight * (df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']) - l_weight * df['lowDangerShotsAgainst']
+
+    fteam = np.cumsum(for_team)
+    ateam = np.cumsum(against_team)
+
+    n = fteam.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        f = fteam[i] - fteam[i - 5]
+        a = ateam[i] - ateam[i - 5]
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and f > a:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and f < a:
+            p += 1
+
+    return p / n
+
+
+def last_five_med_high_danger_penalty_minutes_formula(filepath, season_year, mh_weight, p_weight):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) that abide by a
+    formula involving medium and high danger shots and penalty minutes: mh_weight *
+    (medium_danger_shots + high_danger_shots) * (penalty_minutes) / (p_weight * (penalty_minutes + 1) ** 2)
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    :param mh_weight: The weight on the medium/high danger shots in the formula.
+    :param p_weight: The weight on the penalty minutes in the formula.
+    :return p: The percentage of wins/losses that were accurately predicted using our formula.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'mediumDangerShotsAgainst', 'highDangerShotsFor', 'highDangerShotsAgainst',
+                                 'penalityMinutesFor', 'penalityMinutesAgainst'],
+                      season_year)
+
+    # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
+    for_team = mh_weight * (df['mediumDangerShotsFor'] + df['highDangerShotsFor']) * df['penalityMinutesFor'] / (p_weight * (df['penalityMinutesFor'] + 1) ** 2)
+    against_team = mh_weight * (df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']) * df['penalityMinutesAgainst']  / (p_weight * (df['penalityMinutesAgainst'] + 1) ** 2)
+
+    fteam = np.cumsum(for_team)
+    ateam = np.cumsum(against_team)
+
+    n = fteam.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        f = fteam[i] - fteam[i - 5]
+        a = ateam[i] - ateam[i - 5]
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and f > a:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and f < a:
+            p += 1
+
+    return p / n
+
+
+def last_five_med_high_danger_shots_on_goal_formula(filepath, season_year, s_weight):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) that abide by a
+    formula involving medium and high danger shots and shots on goal: medium danger shots + high danger shots
+    + s_weight * shots_on_gaol.
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    :param s_weight: The weight on the shots on goal in the formula.
+    :return p: The percentage of wins/losses that were accurately predicted using our formula.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'mediumDangerShotsFor',
+                                 'mediumDangerShotsAgainst', 'highDangerShotsFor', 'highDangerShotsAgainst',
+                                 'shotsOnGoalFor', 'shotsOnGoalAgainst'],
+                      season_year)
+
+    # Calculate prefix sums for medium/high danger shots (for and against) and low danger shots (for and against).
+    for_team = (df['mediumDangerShotsFor'] + df['highDangerShotsFor']) - s_weight * df['shotsOnGoalFor']
+    against_team = (df['mediumDangerShotsAgainst'] + df['highDangerShotsAgainst']) - s_weight * df['shotsOnGoalAgainst']
 
     fteam = np.cumsum(for_team)
     ateam = np.cumsum(against_team)
@@ -181,8 +294,10 @@ def print_menu():
     print('\n\nPlease choose one of the hypothesis tests below (all teams in the season):')
     print('1. Produce medium/high danger shots weight plots.')
     print('2. Produce low danger shots weight plots.')
-    print('3. Switch filepath')
-    print('4. Exit')
+    print('3. Produce penalty minutes weight plots.')
+    print('4. Produce shots on goal weight plots.')
+    print('5. Switch filepath')
+    print('6. Exit')
     print()
 
 
