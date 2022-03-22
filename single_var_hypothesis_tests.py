@@ -452,7 +452,7 @@ def get_file():
         if os.access(inputted_file, os.R_OK):
             return inputted_file
         else:
-            print(Fore.RED + 'Could not access file. Make sure the path is correct.\n', 'red')
+            print(Fore.RED + 'Could not access file. Make sure the path is correct.\n')
             print(Style.RESET_ALL)
 
 

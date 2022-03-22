@@ -4,7 +4,7 @@ import os
 from colorama import Fore, Style
 
 # Does not include "exit".
-TOTAL_OPTIONS = 6
+TOTAL_OPTIONS = 8
 
 
 def main():
@@ -44,7 +44,9 @@ def main():
             2: lambda: last_five_med_high_low_danger_formula(filepath, season),
             3: lambda: last_five_med_high_low_danger(filepath, season),
             4: lambda: last_five_med_high_danger_penalty_minutes(filepath, season),
-            5: lambda: last_five_med_high_danger_rebounds(filepath, season)
+            5: lambda: last_five_med_high_danger_rebounds(filepath, season),
+            6: lambda: last_five_wins(filepath, season),
+            7: lambda: last_five_wins_split_season(filepath, season)
         }
 
         if choice < TOTAL_OPTIONS:
@@ -291,6 +293,103 @@ def last_five_med_high_danger_rebounds(filepath, season_year):
     print(p / n)
 
 
+def last_five_wins(filepath, season_year):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) where the winning team
+    in this games had more wins in the previous five games. Prints this result.
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst'], season_year)
+
+    g_for = df['goalsFor']
+    g_against = df['goalsAgainst']
+
+    n = g_for.size - 5
+    p = 0
+
+    for i in range(6, n):
+
+        success_for = 0
+        success_against = 0
+
+        for j in range(1, 6):
+            if g_for[i - j] > g_against[i - j]:
+                success_for += 1
+            elif g_for[i - j] < g_against[i - j]:
+                success_against += 1
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and success_for > success_against:
+            p += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and success_for < success_against:
+            p += 1
+
+    print(p / n)
+
+
+def last_five_wins_split_season(filepath, season_year):
+    """
+    Calculate the percentage of winning games in the given season (except the first five games) where the winning team
+    in this games had more wins in the previous five games. Prints this result split by half of the season (the first
+    half occurs before the all star game, and the second half occurs after).
+
+    :param filepath: The filepath to the team that is being analyzed.
+    :param season_year: The season to be analyzed.
+    """
+
+    # Extract the relevant data.
+    df = extract_data(filepath, ['season', 'situation', 'goalsFor', 'goalsAgainst', 'gameDate'], season_year)
+
+    g_for = df['goalsFor']
+    g_against = df['goalsAgainst']
+
+    g_for_before = df.loc[df.gameDate < 20190126]
+    g_for_before = g_for_before['goalsFor']
+
+    g_for_after = df.loc[df.gameDate > 20190126]
+    g_for_after = g_for_after['goalsFor']
+
+    n = g_for.size - 5
+
+    n_before = 0
+    n_after = 0
+    p_before = 0
+    p_after = 0
+
+    for i in range(6, n):
+
+        success_for = 0
+        success_against = 0
+
+        if df['gameDate'][i] < 20190126:
+            n_before += 1
+        else:
+            n_after += 1
+
+        for j in range(1, 6):
+            if g_for[i - j] > g_against[i - j]:
+                success_for += 1
+            elif g_for[i - j] < g_against[i - j]:
+                success_against += 1
+
+        if df['goalsFor'][i] > df['goalsAgainst'][i] and success_for > success_against:
+            if df['gameDate'][i] < 20190126:
+                p_before += 1
+            else:
+                p_after += 1
+        elif df['goalsFor'][i] < df['goalsAgainst'][i] and success_for < success_against:
+            if df['gameDate'][i] < 20190126:
+                p_before += 1
+            else:
+                p_after += 1
+
+    print('Before all-star game: ' + str(p_before / n_before))
+    print('After all-star game: ' + str(p_after / n_after))
+
+
 def extract_data(filepath, columns, season_year):
     """
     Extract the relevant data from the CSV file. Games are indexed by their ID automatically (do not pass in as column).
@@ -326,7 +425,7 @@ def get_file():
         if os.access(inputted_file, os.R_OK):
             return inputted_file
         else:
-            print(Fore.RED + 'Could not access file. Make sure the path is correct.\n', 'red')
+            print(Fore.RED + 'Could not access file. Make sure the path is correct.\n')
             print(Style.RESET_ALL)
 
 
@@ -340,8 +439,10 @@ def print_menu():
     print('3. Medium/High Danger Shots and Low Danger Shots (previous five games)')
     print('4. Medium/High Danger Shots and Penalty Minutes (previous five games)')
     print('5. Medium/High Danger Shots and Rebounds (previous five games)')
-    print('6. Switch filepath')
-    print('7. Exit')
+    print('6. Wins (previous five games)')
+    print('7. Wins split season (previous five games)')
+    print('8. Switch filepath')
+    print('9. Exit')
     print()
 
 
